@@ -192,21 +192,31 @@ func ParseLogLine(line string) (*AuditMessage, error) {
 //
 // A non-nil error is returned if it fails to parse the message header
 // (timestamp, sequence).
-func Parse(typ AuditMessageType, message string) (*AuditMessage, error) {
+func (self *AuditMessage) Parse(typ AuditMessageType, message string) error {
 	message = strings.TrimSpace(message)
 
 	timestamp, seq, end, err := parseAuditHeader(message)
 	if err != nil {
+		return err
+	}
+
+	self.RecordType = typ
+	self.Timestamp = timestamp
+	self.Sequence = seq
+	self.offset = indexOfMessage(message[end:])
+	self.RawData = message
+
+	return nil
+}
+
+func Parse(typ AuditMessageType, message string) (*AuditMessage, error) {
+	msg := &AuditMessage{}
+
+	err := msg.Parse(typ, message)
+	if err != nil {
 		return nil, err
 	}
 
-	msg := &AuditMessage{
-		RecordType: typ,
-		Timestamp:  timestamp,
-		Sequence:   seq,
-		offset:     indexOfMessage(message[end:]),
-		RawData:    message,
-	}
 	return msg, nil
 }
 
